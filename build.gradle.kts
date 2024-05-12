@@ -6,6 +6,7 @@ val postgresDriverVersion: String by project
 val mockkVersion: String by project
 val kotestVersion: String by project
 val testContainersVersion: String by project
+val hikariVersion: String by project
 
 plugins {
     kotlin("jvm") version "1.9.23"
@@ -38,6 +39,7 @@ dependencies {
     implementation("org.postgresql:postgresql:$postgresDriverVersion")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("com.zaxxer:HikariCP:$hikariVersion")
 
     testImplementation("io.ktor:ktor-server-tests-jvm")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")

@@ -1,11 +1,10 @@
 package io.minibuilds.infrastructure
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.javatime.date
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
 
 @Serializable
@@ -16,44 +15,44 @@ data class User(
     val dateOfBirth: LocalDate
 )
 
+object UserTable : Table() {
+    val id = integer("id").autoIncrement()
+    val name = varchar("name", length = 50)
+    val dateOfBirth = date("date_of_birth")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
 class UserRepository {
-    object UserTable : Table() {
-        val id = integer("id").autoIncrement()
-        val name = varchar("name", length = 50)
-        val dateOfBirth = date("date_of_birth")
 
-        override val primaryKey = PrimaryKey(id)
-    }
-
-    private suspend fun <T> dbQuery(block: suspend () -> T): T =
-        newSuspendedTransaction(Dispatchers.IO) { block() }
-
-    suspend fun getAllUsers(): List<User> {
-        return dbQuery {
+    fun getAllUsers(): List<User> =
+        transaction {
             UserTable.selectAll()
                 .map { it.toUser() }
         }
-    }
 
-    suspend fun getUser(id: Int): User? {
-        return dbQuery {
+    fun getUser(id: Int): User? =
+        transaction {
             UserTable
                 .select { UserTable.id eq id }
                 .map { it.toUser() }
                 .singleOrNull()
         }
-    }
 
-    suspend fun addUser(name: String, dateOfBirth: LocalDate): User? = dbQuery {
-        val insertStatement = UserTable.insert {
-            it[UserTable.name] = name
-            it[UserTable.dateOfBirth] = dateOfBirth
+    fun addUser(name: String, dateOfBirth: LocalDate): User? =
+        transaction {
+            val insertStatement = UserTable.insert {
+                it[UserTable.name] = name
+                it[UserTable.dateOfBirth] = dateOfBirth
+            }
+            insertStatement.resultedValues?.first()?.toUser()
         }
-        insertStatement.resultedValues?.first()?.toUser()
-    }
 
     companion object {
-        private fun ResultRow.toUser() = User(this[UserTable.id], this[UserTable.name], this[UserTable.dateOfBirth])
+        private fun ResultRow.toUser() = User(
+            this[UserTable.id],
+            this[UserTable.name],
+            this[UserTable.dateOfBirth]
+        )
     }
 }
-
