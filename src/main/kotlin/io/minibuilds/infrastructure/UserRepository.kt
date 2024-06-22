@@ -2,8 +2,11 @@ package io.minibuilds.infrastructure
 
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.javatime.date
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDate
 
@@ -15,7 +18,7 @@ data class User(
     val dateOfBirth: LocalDate
 )
 
-object UserTable : Table() {
+object UserTable : Table("user") {
     val id = integer("id").autoIncrement()
     val name = varchar("name", length = 50)
     val dateOfBirth = date("date_of_birth")
@@ -34,7 +37,8 @@ class UserRepository {
     fun getUser(id: Int): User? =
         transaction {
             UserTable
-                .select { UserTable.id eq id }
+                .selectAll()
+                .where { UserTable.id eq id }
                 .map { it.toUser() }
                 .singleOrNull()
         }
